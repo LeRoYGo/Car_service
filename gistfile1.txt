@@ -1,0 +1,124 @@
+using System;
+using System.Collections.Generic;
+
+namespace Car_service
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            CarService carService = new CarService();
+            carService.CustomerService();
+        }
+    }
+
+    class CarService
+    {
+        private Random _rendPriceWork = new Random();
+        private int _balance;
+        private List<Detail> _stockDetail;
+        private Queue<Client> _clients = new Queue<Client>();
+
+        public CarService()
+        {
+            _balance = 10000;
+            _stockDetail = new List<Detail> { new Detail("Колеса", 50), new Detail("Дверь", 100), new Detail("Двигатель", 350), new Detail("Двигатель", 200) };
+            _clients.Enqueue(new Client(new Detail("Двигатель", 350)));
+            _clients.Enqueue(new Client(new Detail("Трансмиссия", 300)));
+            _clients.Enqueue(new Client(new Detail("Колеса", 50)));
+            _clients.Enqueue(new Client(new Detail("Дверь", 100)));
+        }
+
+        public void CustomerService()
+        {
+            while (_clients.Count != 0)
+            {
+                int priceWork = _rendPriceWork.Next(50, 151);
+                Client client = _clients.Dequeue();
+                Console.WriteLine("Баланс авто сервиса: " + _balance);
+                ShowDetails();
+                Console.WriteLine($"Автомобиль клиента | Поломка: {client.Breaking.Name} / Стоимость починки(Цена детали + работа): {client.Breaking.Part + priceWork}");
+                Console.WriteLine("Ваше решение: 1 - Поченить   2 - Отказать");
+                Console.Write("Выбор: ");
+                string userInput = Console.ReadLine();
+                if (userInput == "1")
+                {
+                    bool repair = false;
+                    Console.Write("Введите название детали которую хатите заменить:");
+                    userInput = Console.ReadLine();
+                    repair = UpdateDetail(priceWork, repair, client, userInput);
+                    if (repair == false)
+                    {
+                        PayDamage(client, priceWork);
+                    }
+                }
+                PayFine(userInput, client, priceWork);
+                Console.ReadKey();
+                Console.Clear();
+            }
+            Console.WriteLine("Клиенты кончились");
+            Console.ReadKey();
+        }
+        public void PayDamage(Client client, int priceWork)
+        {
+            int fine = (client.Breaking.Part + priceWork) / 3;
+            Console.Write("Вы заменили не ту деталь. Поэтому вы возместили ущерб в размере " + fine);
+            _balance -= fine;
+        }
+        public bool UpdateDetail(int priceWork, bool repair, Client client, string userInput)
+        {
+            for (int i = 0; i < _stockDetail.Count; i++)
+            {
+                if (userInput.ToLower() == _stockDetail[i].Name.ToLower() && _stockDetail[i].Name.ToLower() == client.Breaking.Name.ToLower())
+                {
+                    Console.WriteLine("Деталь успешно заменина. Вы заработали " + (_stockDetail[i].Part + priceWork));
+                    _balance += client.Breaking.Part + priceWork;
+                    _stockDetail.RemoveAt(i);
+                    return repair = true;
+                }
+            }
+            return repair = false;
+        }
+        public void PayFine(string userInput, Client client, int priceWork)
+        {
+            int fine = (client.Breaking.Part + priceWork) / 2;
+            if (userInput == "2")
+            {
+                Console.Write("Вы отказали клиенту, и заплатите за это щтраф в размере " + fine);
+                _balance -= fine;
+                Console.ReadKey();
+            }
+        }
+        public void ShowDetails()
+        {
+            Console.WriteLine("Детали на складе:");
+            for (int i = 0; i < _stockDetail.Count; i++)
+            {
+                Console.WriteLine("Название: " + _stockDetail[i].Name + " | Цена: " + _stockDetail[i].Part);
+            }
+            Console.WriteLine("---------------------------------------------------------------------------------------------------------");
+        }
+    }
+
+    class Client
+    {
+        public Detail Breaking { get; private set; }
+
+        public Client(Detail breaking)
+        {
+            Breaking = breaking;
+        }
+    }
+
+    class Detail
+    {
+        public string Name { get; private set; }
+        public int Part { get; private set; }
+
+        public Detail(string nameDetail, int partPrice)
+        {
+            Name = nameDetail;
+            Part = partPrice;
+        }
+    }
+}
